@@ -6,6 +6,7 @@ from django.views.generic import FormView, TemplateView
 from django.contrib.auth import get_user_model
 from .models import Film
 from django.views.generic.list import ListView
+from django.http import JsonResponse
 
 from films.forms import RegisterForm
 
@@ -71,3 +72,20 @@ def addFilm(request):
     # return template with all of the user's film
     films = request.user.films.all()
     return render(request, 'partials/film-list.html', {'films' : films})
+
+ 
+
+
+
+def deleteFilm(request, pk):
+    user = request.user
+    film = user.films.get(id = pk)
+    user.films.remove(film)
+
+
+    films = request.user.films.all()
+    return render(request, 'partials/film-list.html', {'films' : films})
+
+
+
+  
