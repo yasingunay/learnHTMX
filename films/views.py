@@ -4,6 +4,8 @@ from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
 from django.views.generic import FormView, TemplateView
 from django.contrib.auth import get_user_model
+from .models import Film
+from django.views.generic.list import ListView
 
 from films.forms import RegisterForm
 
@@ -37,9 +39,35 @@ class RegisterView(FormView):
 
 
 
+class FilmList(ListView):
+    template_name = "films.html"
+    model = Film
+    context_object_name = "films"
+
+    def get_queryset(self):
+       user = self.request.user
+       return user.films.all()
+    
+
+
 def check_username(request):
     username = request.POST.get("username")
     if get_user_model().objects.filter(username = username).exists():
-        return HttpResponse("<div style='color: red' > This username already exists! </div>")
+        return HttpResponse("<div id='username-error' class='error'> This username already exists! </div>")
     else:
-        return HttpResponse("<div style='color: green;'> This username is available. </div>")
+        return HttpResponse("<div id='username-error' class='success'> This username is available. </div>")
+    
+
+
+def addFilm(request):
+    name = request.POST.get("filmname")
+    
+
+    film = Film.objects.create(name=name)
+
+    # add the film to the user's list
+    request.user.films.add(film)
+
+    # return template with all of the user's film
+    films = request.user.films.all()
+    return render(request, 'partials/film-list.html', {'films' : films})
