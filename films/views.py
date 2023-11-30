@@ -7,6 +7,11 @@ from django.contrib.auth import get_user_model
 from .models import Film
 from django.views.generic.list import ListView
 from django.http import JsonResponse
+from django.contrib import messages
+
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.decorators.http import require_http_methods
 
 from films.forms import RegisterForm
 
@@ -40,7 +45,7 @@ class RegisterView(FormView):
 
 
 
-class FilmList(ListView):
+class FilmList (LoginRequiredMixin, ListView):
     template_name = "films.html"
     model = Film
     context_object_name = "films"
@@ -59,24 +64,26 @@ def check_username(request):
         return HttpResponse("<div id='username-error' class='success'> This username is available. </div>")
     
 
-
+@login_required
 def addFilm(request):
     name = request.POST.get("filmname")
     
 
-    film = Film.objects.create(name=name)
+    film = Film.objects.get_or_create(name=name)[0]
 
     # add the film to the user's list
     request.user.films.add(film)
 
     # return template with all of the user's film
     films = request.user.films.all()
+    messages.success(request, f"Added {name} to the list of films.")
     return render(request, 'partials/film-list.html', {'films' : films})
 
  
 
 
-
+@login_required
+@require_http_methods(['DELETE'])
 def deleteFilm(request, pk):
     user = request.user
     film = user.films.get(id = pk)
@@ -89,3 +96,21 @@ def deleteFilm(request, pk):
 
 
   
+def searchFilm(request):
+    search_text = request.POST.get('search')
+
+    userfilms = request.user.films.all()
+
+    results = Film.objects.filter(name__icontains = search_text).exclude(
+        name__in = userfilms.values_list('name', flat=True) #The flat=True option ensures that you get a flat list rather than a list of tuples.
+    )
+
+    context = {
+        'results' : results
+    }
+
+    return render(request,'partials/search-results.html', context) 
+
+
+def clear(request):
+    return HttpResponse("")
