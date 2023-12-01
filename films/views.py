@@ -9,6 +9,7 @@ from django.views.generic.list import ListView
 from django.http import JsonResponse
 from django.contrib import messages
 
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_http_methods
@@ -48,6 +49,7 @@ class RegisterView(FormView):
 class FilmList (LoginRequiredMixin, ListView):
     template_name = "films.html"
     model = Film
+    paginate_by = 20 # films per page
     context_object_name = "films"
 
     def get_queryset(self):
@@ -114,3 +116,14 @@ def searchFilm(request):
 
 def clear(request):
     return HttpResponse("")
+
+@login_required
+def detail(request, pk):
+    film = Film.objects.get(id=pk)
+    return render(request, 'partials/film-detail.html', {'film' : film})
+
+
+@login_required
+def films_partial(request):
+    films = request.user.films.all()
+    return render(request, 'partials/film-list.html', {'films': films})
